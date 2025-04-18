@@ -167,7 +167,8 @@ class BYTETracker(object):
             scores = output_results[:, 4]
             bboxes = output_results[:, :4]
         else:
-            output_results = output_results.cpu().numpy()
+            if hasattr(output_results, "cpu"):
+                output_results = output_results.cpu().numpy()
             scores = output_results[:, 4] * output_results[:, 5]
             bboxes = output_results[:, :4]  # x1y1x2y2
         img_h, img_w = img_info[0], img_info[1]
