@@ -14,7 +14,7 @@ class STrack(BaseTrack):
     shared_kalman = KalmanFilter()
     def __init__(self, tlwh, score, class_id=-1, depth=-1.0,
                  lat_pos=0.0, long_pos=0.0, height_pos=0.0,
-                 lat_vel=0.0, long_vel=0.0, relative_lane=0):
+                 lat_vel=0.0, long_vel=0.0, relative_lane=0, detection_confidence=0.0):
 
         # wait activate
         self._tlwh = np.asarray(tlwh, dtype=np.float64)
@@ -34,6 +34,7 @@ class STrack(BaseTrack):
         self.lat_vel = lat_vel
         self.long_vel = long_vel
         self.relative_lane = relative_lane
+        self.detection_confidence = detection_confidence
 
     def predict(self):
         mean_state = self.mean.copy()
@@ -191,6 +192,7 @@ class BYTETracker(object):
             det_lat_vels = output_results[:, 10]
             det_long_vels = output_results[:, 11]
             det_relative_lanes = output_results[:, 12]
+            det_detection_confidences = output_results[:, 13]
             
         img_h, img_w = img_info[0], img_info[1]
         scale = min(img_size[0] / float(img_h), img_size[1] / float(img_w))
@@ -209,10 +211,10 @@ class BYTETracker(object):
         if len(dets) > 0:
             '''Detections'''
             detections = [STrack(STrack.tlbr_to_tlwh(tlbr), s, class_id=cls, depth=depth, lat_pos=lat_pos,
-                        long_pos=long_pos, height_pos=height_pos, lat_vel=lat_vel, long_vel=long_vel, relative_lane=relative_lane) 
-                        for (tlbr, s, cls, depth, lat_pos, long_pos, height_pos, lat_vel, long_vel, relative_lane) in 
+                        long_pos=long_pos, height_pos=height_pos, lat_vel=lat_vel, long_vel=long_vel, relative_lane=relative_lane, detection_confidence=detection_confidence) 
+                        for (tlbr, s, cls, depth, lat_pos, long_pos, height_pos, lat_vel, long_vel, relative_lane, detection_confidence) in 
                         zip(dets, scores_keep, det_classes[remain_inds], det_depths, det_lat_poss, det_long_poss,
-                            det_height_poss, det_lat_vels, det_long_vels, det_relative_lanes)]
+                            det_height_poss, det_lat_vels, det_long_vels, det_relative_lanes, det_detection_confidences)]
         else:
             detections = []
 
@@ -249,11 +251,11 @@ class BYTETracker(object):
         if len(dets_second) > 0:
             '''Detections'''
             detections_second = [STrack(STrack.tlbr_to_tlwh(tlbr), s, class_id=cls, depth=depth, lat_pos=lat_pos,
-                                 long_pos=long_pos, height_pos=height_pos, lat_vel=lat_vel, long_vel=long_vel, relative_lane=relative_lane) 
-                                for (tlbr, s, cls, depth, lat_pos, long_pos, height_pos, lat_vel, long_vel, relative_lane) in 
-                                zip(dets_second, scores_second, det_classes[inds_second], det_depths[inds_second], 
-                                    det_lat_poss[inds_second], det_long_poss[inds_second], det_height_poss[inds_second], 
-                                    det_lat_vels[inds_second], det_long_vels[inds_second], det_relative_lanes[inds_second])]
+                                 long_pos=long_pos, height_pos=height_pos, lat_vel=lat_vel, long_vel=long_vel, relative_lane=relative_lane, detection_confidence=detection_confidence) 
+                                for (tlbr, s, cls, depth, lat_pos, long_pos, height_pos, lat_vel, long_vel, relative_lane, detection_confidence) in 
+                                zip(dets_second, scores_second, det_classes, det_depths, 
+                                    det_lat_poss, det_long_poss, det_height_poss, 
+                                    det_lat_vels, det_long_vels, det_relative_lanes, det_detection_confidences)]
         else:
             detections_second = []
         r_tracked_stracks = [strack_pool[i] for i in u_track if strack_pool[i].state == TrackState.Tracked]
