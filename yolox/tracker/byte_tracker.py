@@ -12,7 +12,7 @@ from .basetrack import BaseTrack, TrackState
 
 class STrack(BaseTrack):
     shared_kalman = KalmanFilter()
-    def __init__(self, tlwh, score, class_id=-1, depth=-1.0, confidence=0.0):
+    def __init__(self, tlwh, score, class_id=-1, depth=-1.0, confidence=0.0, classification_id=-1):
 
         # wait activate
         self._tlwh = np.asarray(tlwh, dtype=np.float)
@@ -24,6 +24,7 @@ class STrack(BaseTrack):
         self.class_id = class_id
         self.depth = depth
         self.confidence = confidence
+        self.classification_id = classification_id
         self.tracklet_len = 0
 
     def predict(self):
@@ -177,6 +178,7 @@ class BYTETracker(object):
             det_classes = output_results[:, 5].astype(np.int32)
             det_depths = output_results[:, 6]
             det_confidences = output_results[:, 7]
+            det_classification_ids = output_results[:, 8]
             
         img_h, img_w = img_info[0], img_info[1]
         scale = min(img_size[0] / float(img_h), img_size[1] / float(img_w))
@@ -194,8 +196,8 @@ class BYTETracker(object):
 
         if len(dets) > 0:
             '''Detections'''
-            detections = [STrack(STrack.tlbr_to_tlwh(tlbr), s, class_id=cls, depth=depth, confidence=conf) for
-                        (tlbr, s, cls, depth, conf) in zip(dets, scores_keep, det_classes[remain_inds], det_depths, det_confidences)]
+            detections = [STrack(STrack.tlbr_to_tlwh(tlbr), s, class_id=cls, depth=depth, confidence=conf, classification_id=classification_id) for
+                        (tlbr, s, cls, depth, conf, classification_id) in zip(dets, scores_keep, det_classes[remain_inds], det_depths, det_confidences, det_classification_ids)]
         else:
             detections = []
 
@@ -231,8 +233,8 @@ class BYTETracker(object):
         # association the untrack to the low score detections
         if len(dets_second) > 0:
             '''Detections'''
-            detections_second = [STrack(STrack.tlbr_to_tlwh(tlbr), s, class_id=cls, depth=depth, confidence=conf) for
-                        (tlbr, s, cls, depth, conf) in zip(dets_second, scores_second, det_classes[inds_second], det_depths, det_confidences)]
+            detections_second = [STrack(STrack.tlbr_to_tlwh(tlbr), s, class_id=cls, depth=depth, confidence=conf, classification_id=classification_id) for
+                        (tlbr, s, cls, depth, conf, classification_id) in zip(dets_second, scores_second, det_classes[inds_second], det_depths, det_confidences, det_classification_id)]
         else:
             detections_second = []
         r_tracked_stracks = [strack_pool[i] for i in u_track if strack_pool[i].state == TrackState.Tracked]
